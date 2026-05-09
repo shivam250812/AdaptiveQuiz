@@ -122,6 +122,29 @@ app.get('/api/questions', async (req, res) => {
   }
 });
 
+// API Route to add a new question
+app.post('/api/questions', async (req, res) => {
+  const { subject, difficulty, question, options, answer } = req.body;
+
+  if (!subject || !difficulty || !question || !options || !answer) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // Generate a unique ID
+  const id = `${subject.charAt(0)}_${difficulty.charAt(0)}_${Date.now()}`;
+
+  try {
+    const stmt = await db.prepare(`INSERT INTO questions (id, subject, difficulty, question, options, answer) VALUES (?, ?, ?, ?, ?, ?)`);
+    await stmt.run(id, subject, difficulty, question, JSON.stringify(options), answer);
+    await stmt.finalize();
+    
+    res.status(201).json({ message: 'Question added successfully', id });
+  } catch (error) {
+    console.error("Failed to insert question:", error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Serve frontend static files for Render deployment
 const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
 app.use(express.static(frontendDistPath));
